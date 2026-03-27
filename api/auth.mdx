@@ -1,0 +1,156 @@
+---
+title: 'Auth'
+description: 'Endpoints for requesting and applying a password reset.'
+---
+
+## POST /api/auth/forgot-password
+
+Sends a password reset email to the given address. The email contains a link with a time-limited token (valid for 15 minutes) that can be used with the reset-password endpoint.
+
+### Request body
+
+<ParamField body="email" type="string" required>
+  The email address associated with the account.
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  `true` when the email was sent successfully.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  A confirmation message.
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  --url http://localhost:4000/api/auth/forgot-password \
+  --header 'Content-Type: application/json' \
+  --data '{"email": "patient@example.com"}'
+```
+
+</CodeGroup>
+
+<ResponseExample>
+
+```json 200
+{
+  "success": true,
+  "message": "Se ha enviado un correo con las instrucciones para restablecer tu contraseña"
+}
+```
+
+```json 404
+{
+  "error": "No existe una cuenta con este correo"
+}
+```
+
+```json 500
+{
+  "error": "Error al enviar el correo. Por favor, intenta de nuevo."
+}
+```
+
+</ResponseExample>
+
+---
+
+## POST /api/auth/reset-password
+
+Applies a password reset. Validates the token, checks password strength rules, and updates the account password.
+
+<Note>
+  Sending a `GET` request to this path returns `405 Method Not Allowed` with a message explaining that a `POST` request is required.
+</Note>
+
+### Request body
+
+<ParamField body="token" type="string" required>
+  The reset token received in the password reset email.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  The email address associated with the account. Must match the address the token was issued for.
+</ParamField>
+
+<ParamField body="newPassword" type="string" required>
+  The new password to set. Also accepted as `password`. Must satisfy the password rules below.
+</ParamField>
+
+### Password rules
+
+The new password must meet all of the following requirements:
+
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one special character (e.g. `@`, `#`, `$`, `!`)
+- Must not contain numeric sequences such as `123`
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  `true` when the password was reset successfully.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  A confirmation message.
+</ResponseField>
+
+### Error responses
+
+| Status | Error message |
+|--------|---------------|
+| `400` | `"Faltan datos requeridos (token, email, password)"` |
+| `400` | `"La contraseña debe tener mínimo 8 caracteres."` |
+| `400` | `"La contraseña debe contener al menos una letra mayúscula."` |
+| `400` | `"La contraseña debe contener al menos un carácter especial (ej. @, #, $, !)."` |
+| `400` | `"La contraseña no puede contener secuencias numéricas como 123."` |
+| `400` | `"El token es inválido o el correo no coincide"` |
+| `400` | `"El token de restablecimiento ha expirado"` |
+| `500` | `"Error del servidor al restablecer contraseña."` |
+
+### Example
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  --url http://localhost:4000/api/auth/reset-password \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "token": "<reset-token>",
+    "email": "patient@example.com",
+    "newPassword": "NewPass@2024"
+  }'
+```
+
+</CodeGroup>
+
+<ResponseExample>
+
+```json 200
+{
+  "success": true,
+  "message": "Tu contraseña ha sido restablecida exitosamente. Ya puedes iniciar sesión."
+}
+```
+
+```json 400
+{
+  "error": "El token de restablecimiento ha expirado"
+}
+```
+
+```json 500
+{
+  "error": "Error del servidor al restablecer contraseña."
+}
+```
+
+</ResponseExample>

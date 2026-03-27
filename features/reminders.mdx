@@ -1,0 +1,87 @@
+---
+title: 'Reminders'
+description: 'Automated hourly email reminders for upcoming appointments.'
+icon: 'bell'
+---
+
+DentalConnect sends automatic appointment reminders to patients via email. A scheduled cron job runs every hour, finds all `pendiente` appointments scheduled for the following day, and dispatches a reminder email to each patient.
+
+## How it works
+
+The reminder service runs as a cron job on the server using the schedule `0 * * * *` (the top of every hour) in the `America/Mexico_City` timezone.
+
+On each run, the service:
+
+1. Queries the database for all `citas` with `estado_cita = 'pendiente'` where `DATE(fecha_hora_inicio) = CURDATE() + INTERVAL 1 DAY`.
+2. Skips any patient whose `correo_electronico` is `NULL`.
+3. Looks up the clinic's custom message template from the `config_recordatorios` table (if one exists).
+4. Renders the message by substituting template variables with patient and appointment data.
+5. Sends the email via [Resend](https://resend.com) from `soporte@dentalconnect.cloud`.
+
+## Email format
+
+Every reminder email is sent with the following structure:
+
+- **From:** `DentalConnect <soporte@dentalconnect.cloud>`
+- **To:** The patient's `correo_electronico`
+- **Subject:** `Recordatorio de Cita - {clinic name}`
+
+### Example email
+
+> **Subject:** Recordatorio de Cita - Clínica Dental del Norte
+>
+> ¡Hola María García!
+>
+> Hola María García, te recordamos tu cita en Clínica Dental del Norte el día 03/04/2026 a las 10:30.
+>
+> *Este es un mensaje automático, por favor no respondas a este correo.*
+
+## Message templates
+
+The body of the reminder is driven by a message template. Each clinic can define a custom template in the `config_recordatorios` table using the `plantilla_mensaje` field. If no custom template is configured, the default template is used.
+
+**Default template:**
+
+```
+Hola {paciente}, te recordamos tu cita en {clinica} el día {fecha} a las {hora}.
+```
+
+### Template variables
+
+| Variable | Replaced with |
+|---|---|
+| `{paciente}` | The patient's name from the `pacientes` table. |
+| `{clinica}` | The clinic's `nombre_comercial` from the `clinicas` table. |
+| `{fecha}` | The appointment date formatted as `DD/MM/YYYY` in the `es-MX` locale. |
+| `{hora}` | The appointment time formatted as `HH:MM` in the `es-MX` locale. |
+
+### Configuring a custom template
+
+To set a custom reminder message for a clinic, update the `plantilla_mensaje` column in the `config_recordatorios` table for the corresponding `id_clinica`.
+
+```sql
+UPDATE config_recordatorios
+SET plantilla_mensaje = 'Estimado {paciente}, le recordamos su cita en {clinica} programada para el {fecha} a las {hora}. Le esperamos.'
+WHERE id_clinica = 7;
+```
+
+<Info>
+  The `config_recordatorios` table is joined with a `LEFT JOIN`, so clinics without a row in that table automatically fall back to the default template.
+</Info>
+
+## Cron schedule reference
+
+| Property | Value |
+|---|---|
+| Schedule expression | `0 * * * *` |
+| Frequency | Once per hour, at minute 0 |
+| Timezone | `America/Mexico_City` |
+| Email provider | Resend |
+
+## Requirements for a reminder to be sent
+
+A reminder email is only dispatched when **all** of the following are true:
+
+- The appointment's `estado_cita` is `pendiente`.
+- The appointment's `fecha_hora_inicio` falls on tomorrow's date (server-local date in `America/Mexico_City`).
+- The patient has a non-null `correo_electronico` in the `pacientes` table.

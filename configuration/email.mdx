@@ -1,0 +1,78 @@
+---
+title: 'Email configuration'
+description: 'How the DentalConnect API sends transactional emails using Resend.'
+---
+
+The DentalConnect API uses [Resend](https://resend.com) to deliver transactional emails. All outgoing mail is sent from `DentalConnect <soporte@dentalconnect.cloud>`.
+
+## Prerequisites
+
+You need a Resend account and an API key before emails will work.
+
+<Steps>
+  <Step title="Create a Resend account">
+    Sign up at [resend.com](https://resend.com). A free account includes 3,000 emails per month.
+  </Step>
+  <Step title="Create an API key">
+    In the Resend dashboard, go to **API Keys** and create a new key. Copy the key — it is only shown once.
+  </Step>
+  <Step title="Add the key to your environment">
+    Set the `RESEND_API_KEY` variable in your `.env` file:
+
+    ```ini .env
+    RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+    ```
+  </Step>
+</Steps>
+
+## Email types
+
+The API sends two types of emails.
+
+### Password recovery
+
+Triggered when a user requests a password reset. The email contains a time-limited link (15 minutes) that directs the user to the frontend reset page.
+
+- **Subject:** `Recuperación de Contraseña - DentalConnect`
+- **From:** `DentalConnect <soporte@dentalconnect.cloud>`
+- **Link destination:** constructed from the `FRONTEND_URL` environment variable
+
+The reset URL is built using `FRONTEND_URL`, so this variable must point to your deployed frontend. If `FRONTEND_URL` is not set, it defaults to `https://dentalconnect.cloud`.
+
+### Appointment reminders
+
+Sent automatically by a cron job that runs every hour (at minute 0, in the `America/Mexico_City` timezone). The job queries for `pendiente` appointments scheduled for the following day and emails each patient whose record includes an email address.
+
+- **Subject:** `Recordatorio de Cita - {clinic name}`
+- **From:** `DentalConnect <soporte@dentalconnect.cloud>`
+- **Message body:** uses the `plantilla_mensaje` template stored in `config_recordatorios` for the clinic, with the following placeholders replaced at send time:
+
+| Placeholder | Replaced with |
+|---|---|
+| `{paciente}` | Patient's name |
+| `{clinica}` | Clinic's commercial name |
+| `{fecha}` | Appointment date (formatted for `es-MX` locale) |
+| `{hora}` | Appointment time (HH:MM, `es-MX` locale) |
+
+If no template is configured for a clinic, the following default message is used:
+
+```
+Hola {paciente}, te recordamos tu cita en {clinica} el día {fecha} a las {hora}.
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Emails are not being sent">
+    Check that `RESEND_API_KEY` is set correctly in your environment. The server logs an error at startup and at send time if the key is missing or invalid.
+  </Accordion>
+  <Accordion title="Password reset link points to the wrong URL">
+    Verify the `FRONTEND_URL` environment variable is set to your frontend's base URL. If it is missing, links default to `https://dentalconnect.cloud`.
+  </Accordion>
+  <Accordion title="Appointment reminders are not being sent">
+    Confirm that:
+    - The server started successfully and the cron service logged `Servicio de recordatorios automáticos (Cron) INICIADO`.
+    - The patient records in the `pacientes` table include a non-null `correo_electronico`.
+    - The appointment `estado_cita` is `pendiente` and the appointment is scheduled for the following calendar day.
+  </Accordion>
+</AccordionGroup>

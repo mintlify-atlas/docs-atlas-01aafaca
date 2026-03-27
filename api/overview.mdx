@@ -1,0 +1,78 @@
+---
+title: 'API overview'
+description: 'Base URLs, available endpoints, request format, and common response conventions for the DentalConnect API.'
+---
+
+The DentalConnect API is a REST API that returns JSON. It runs on port `4000` by default and can be configured via the `PORT` environment variable.
+
+**Base URL**
+
+```
+http://localhost:4000
+```
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/status` | Health check |
+| `POST` | `/api/auth/forgot-password` | Request a password reset email |
+| `POST` | `/api/auth/reset-password` | Apply a password reset using a token |
+| `GET` | `/api/citas/proxima/:id_paciente` | Get the next upcoming appointment for a patient |
+
+<CardGroup cols={2}>
+  <Card title="Auth" icon="lock" href="/api/auth">
+    Forgot-password and reset-password endpoints.
+  </Card>
+  <Card title="Appointments" icon="calendar" href="/api/appointments">
+    Retrieve the next upcoming appointment for a patient.
+  </Card>
+</CardGroup>
+
+## Requests
+
+All requests that include a body must send `Content-Type: application/json`. No authentication header is required to call any endpoint.
+
+```bash
+curl --request POST \
+  --url http://localhost:4000/api/auth/forgot-password \
+  --header 'Content-Type: application/json' \
+  --data '{"email": "patient@example.com"}'
+```
+
+## Health check
+
+Send a `GET` request to `/api/status` to verify the API is running.
+
+```bash
+curl http://localhost:4000/api/status
+```
+
+```json
+{
+  "status": "API Online",
+  "version": "1.0.0"
+}
+```
+
+## Error responses
+
+Errors are returned as JSON with either an `error` or `message` field.
+
+```json
+{ "error": "No existe una cuenta con este correo" }
+```
+
+```json
+{ "message": "No tienes citas próximas agendadas." }
+```
+
+### HTTP status codes
+
+| Code | Meaning |
+|------|---------|
+| `200` | Success |
+| `400` | Bad request — invalid or missing parameters |
+| `404` | Resource not found |
+| `405` | Method not allowed |
+| `500` | Internal server error |

@@ -1,80 +1,151 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Get the DentalConnect API running locally and make your first API call in minutes."
 ---
 
-## Get started in three steps
+## Prerequisites
 
-Get your documentation site running locally and make your first customization.
+Before you begin, make sure you have the following installed:
 
-### Step 1: Set up your local environment
+- **Node.js** v18 or later
+- **MySQL** 8.0 or later (running and accessible)
+- **Git**
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Note>
+  The API uses [Sequelize](https://sequelize.org) as its ORM with the `mysql2` dialect by default. Make sure your MySQL instance is running before starting the server.
+</Note>
 
-### Step 2: Deploy your changes
+## Setup
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/a3524110303-cpu/DentalConnect_Api.git
+    cd DentalConnect_Api
+    ```
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Install dependencies">
+    <CodeGroup>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash npm
+    npm install
+    ```
 
-### Step 3: Go live
+    ```bash yarn
+    yarn install
+    ```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure environment variables">
+    Create a `.env` file in the project root with the following values:
+
+    ```bash .env
+    # Database
+    DB_HOST=localhost
+    DB_NAME=dentalconnect
+    DB_USER=your_db_user
+    DB_PASS=your_db_password
+    DB_DIALECT=mysql
+
+    # Email (Resend)
+    RESEND_API_KEY=re_your_api_key
+
+    # Application
+    PORT=4000
+    FRONTEND_URL=https://dentalconnect.cloud
+    ```
+
+    <Tip>
+      `DB_DIALECT` defaults to `mysql` and `PORT` defaults to `4000` if not set. `FRONTEND_URL` is used for password reset links in emails sent by the API.
+    </Tip>
+  </Step>
+
+  <Step title="Start the server">
+    <CodeGroup>
+
+    ```bash Production
+    npm start
+    ```
+
+    ```bash Development (with auto-reload)
+    npm run dev
+    ```
+
+    </CodeGroup>
+
+    You should see output similar to:
+
+    ```
+    Servidor expuesto y corriendo en el puerto 4000
+    Conexión a la base de datos establecida correctamente.
+    ```
+
+    <Note>
+      The server starts and listens for requests before attempting to connect to the database. If the database connection fails, the server stays up and logs the error — no requests are lost.
+    </Note>
+  </Step>
+</Steps>
+
+## Make your first API call
+
+### Health check
+
+Verify the server is running by calling the status endpoint:
+
+```bash
+curl http://localhost:4000/api/status
+```
+
+Expected response:
+
+```json
+{
+  "status": "API Online",
+  "version": "1.0.0"
+}
+```
+
+### Fetch the next appointment for a patient
+
+Once the database is connected, you can query a patient's upcoming appointment by their ID:
+
+```bash
+curl http://localhost:4000/api/citas/proxima/1
+```
+
+Replace `1` with a valid `id_paciente` value from your database.
+
+### Trigger a password reset email
+
+To send a password reset email to a registered user:
+
+```bash
+curl --request POST \
+  --url http://localhost:4000/api/auth/forgot-password \
+  --header "Content-Type: application/json" \
+  --data '{"email": "patient@example.com"}'
+```
+
+<Tip>
+  Password reset emails are sent via [Resend](https://resend.com). Make sure `RESEND_API_KEY` is set and valid before testing this endpoint.
+</Tip>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Authentication" icon="lock" href="/auth/overview">
+    Learn how password reset and token-based flows work.
+  </Card>
+  <Card title="Appointments endpoint" icon="calendar" href="/features/appointments">
+    Explore the appointments query endpoint and its response shape.
+  </Card>
+  <Card title="Environment reference" icon="sliders" href="/configuration/environment">
+    Full reference for all environment variables.
+  </Card>
+  <Card title="Email configuration" icon="envelope" href="/configuration/email">
+    Configure Resend for transactional emails.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

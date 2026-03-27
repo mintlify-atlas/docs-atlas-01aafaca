@@ -1,0 +1,64 @@
+---
+title: 'Environment variables'
+description: 'All environment variables required to run the DentalConnect API.'
+---
+
+The DentalConnect API is configured entirely through environment variables loaded by `dotenv` at startup. Create a `.env` file in the project root before running the server.
+
+<Note>
+  Never commit your `.env` file to version control. Add it to `.gitignore` to prevent accidental exposure of credentials.
+</Note>
+
+## Required variables
+
+<ParamField path="DB_NAME" type="string" required>
+  The name of the MySQL database to connect to.
+</ParamField>
+
+<ParamField path="DB_USER" type="string" required>
+  The MySQL username used to authenticate the database connection.
+</ParamField>
+
+<ParamField path="DB_PASS" type="string" required>
+  The password for the MySQL user specified in `DB_USER`.
+</ParamField>
+
+<ParamField path="DB_HOST" type="string" required>
+  The hostname or IP address of the MySQL server (e.g., `localhost` or a remote host).
+</ParamField>
+
+<ParamField path="RESEND_API_KEY" type="string" required>
+  Your API key from [Resend](https://resend.com). Used to send password recovery and appointment reminder emails.
+</ParamField>
+
+## Optional variables
+
+<ParamField path="DB_DIALECT" type="string" default="mysql">
+  The Sequelize dialect to use. Defaults to `mysql`. Change only if switching database engines.
+</ParamField>
+
+<ParamField path="FRONTEND_URL" type="string" default="https://dentalconnect.cloud">
+  The base URL of the frontend application. Used to construct the password reset link included in recovery emails.
+</ParamField>
+
+<ParamField path="PORT" type="number" default="4000">
+  The port the Express server listens on. Defaults to `4000`.
+</ParamField>
+
+## Example `.env` file
+
+```ini .env
+# Database
+DB_HOST=127.0.0.1
+DB_NAME=dentalconnect
+DB_USER=db_user
+DB_PASS=your_password_here
+DB_DIALECT=mysql
+
+# Email
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+
+# Application
+FRONTEND_URL=https://dentalconnect.cloud
+PORT=4000
+```

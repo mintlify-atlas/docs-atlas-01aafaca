@@ -1,0 +1,97 @@
+---
+title: 'Appointments'
+description: 'Look up the next upcoming appointment for a patient.'
+icon: 'calendar-check'
+---
+
+The appointments feature exposes a single endpoint that returns the earliest upcoming appointment for a given patient. It queries the shared MySQL database and joins across the `citas`, `doctores`, `usuarios_sistema`, and `catalogo_servicios` tables to return a complete appointment record.
+
+## Endpoint
+
+```
+GET /api/citas/proxima/:id_paciente
+```
+
+### Path parameter
+
+<ParamField path="id_paciente" type="string" required>
+  The unique identifier of the patient whose next appointment you want to retrieve.
+</ParamField>
+
+## How it works
+
+The endpoint finds the single earliest appointment that meets all of the following conditions:
+
+- `fecha_hora_inicio` is greater than or equal to the current timestamp (`NOW()`)
+- `estado_cita` is either `pendiente` or `confirmada`
+- `id_paciente` matches the value supplied in the URL
+
+Results are ordered by `fecha_hora_inicio` ascending and limited to 1 row, so only the next appointment is returned.
+
+### Appointment states
+
+| State | Description |
+|---|---|
+| `pendiente` | The appointment has been scheduled but not yet confirmed by the clinic. |
+| `confirmada` | The appointment has been confirmed and is expected to proceed. |
+
+## Example request
+
+```bash
+curl --request GET \
+  --url http://localhost:4000/api/citas/proxima/42
+```
+
+## Responses
+
+### 200 — Appointment found
+
+```json
+{
+  "fecha_hora_inicio": "2026-04-03T10:30:00.000Z",
+  "estado_cita": "confirmada",
+  "motivo": "Revisión de ortodoncia",
+  "nombre_doctor": "Dr. Carlos Mendoza",
+  "nombre_servicio": "Ortodoncia"
+}
+```
+
+<ResponseField name="fecha_hora_inicio" type="string" required>
+  ISO 8601 datetime string for the start of the appointment, stored in UTC.
+</ResponseField>
+
+<ResponseField name="estado_cita" type="string" required>
+  Current status of the appointment. One of `pendiente` or `confirmada`.
+</ResponseField>
+
+<ResponseField name="motivo" type="string" required>
+  The reason or chief complaint recorded for the appointment.
+</ResponseField>
+
+<ResponseField name="nombre_doctor" type="string" required>
+  Full name of the doctor assigned to the appointment, sourced from the `usuarios_sistema` table.
+</ResponseField>
+
+<ResponseField name="nombre_servicio" type="string" required>
+  Name of the dental service associated with the appointment, sourced from the `catalogo_servicios` table.
+</ResponseField>
+
+### 404 — No upcoming appointments
+
+Returned when the patient has no future appointments with status `pendiente` or `confirmada`.
+
+```json
+{
+  "message": "No tienes citas próximas agendadas."
+}
+```
+
+### 500 — Server error
+
+Returned when an unexpected error occurs while querying the database.
+
+```json
+{
+  "error": "Error del servidor al obtener la cita."
+}
+```

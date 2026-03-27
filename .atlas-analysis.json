@@ -1,21 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "name": "DentalConnect API",
+  "projectType": "api-service",
+  "projectName": "DentalConnect API",
+  "projectDescription": "A Node.js/Express REST API for dental clinic management that handles appointment lookups, password recovery, and automated email appointment reminders.",
   "theme": "luma",
-  "colors": {
-    "primary": "#00b4d8"
-  },
-  "navbar": {
-    "primary": {
-      "type": "github",
-      "href": "https://github.com/a3524110303-cpu/DentalConnect_Api"
-    }
-  },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/a3524110303-cpu/DentalConnect_Api"
-    }
-  },
+  "primaryColor": "#00b4d8",
+  "lightColor": null,
+  "darkColor": null,
   "navigation": {
     "tabs": [
       {
@@ -66,5 +56,19 @@
         ]
       }
     ]
-  }
+  },
+  "keyFeatures": [
+    "JWT-based password reset flow with secure token hashing",
+    "Appointment lookup by patient ID with doctor and service details",
+    "Automated daily email reminders for upcoming appointments via Resend",
+    "Bcrypt password hashing with Laravel-compatible $2y$ format",
+    "MySQL/Sequelize ORM with multi-role user model (admin, doctor, receptionist, patient)",
+    "CORS, Helmet, and environment-based security configuration"
+  ],
+  "publicApiSurface": [
+    "POST /api/auth/forgot-password",
+    "POST /api/auth/reset-password",
+    "GET /api/citas/proxima/:id_paciente",
+    "GET /api/status"
+  ]
 }

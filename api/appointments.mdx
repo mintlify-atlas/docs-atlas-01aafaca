@@ -1,0 +1,73 @@
+---
+title: 'Appointments'
+description: 'Retrieve the next upcoming appointment for a patient.'
+---
+
+## GET /api/citas/proxima/:id_paciente
+
+Returns the single soonest upcoming appointment for the given patient. Only appointments with a status of `pendiente` or `confirmada` that are scheduled from the current moment onward are considered. If no such appointment exists, the endpoint returns `404`.
+
+### Path parameters
+
+<ParamField path="id_paciente" type="integer" required>
+  The unique identifier of the patient.
+</ParamField>
+
+### Response
+
+<ResponseField name="fecha_hora_inicio" type="datetime">
+  The scheduled start date and time of the appointment.
+</ResponseField>
+
+<ResponseField name="estado_cita" type="string">
+  The current status of the appointment. One of `pendiente` or `confirmada`.
+</ResponseField>
+
+<ResponseField name="motivo" type="string">
+  The reason for the visit as recorded when the appointment was booked.
+</ResponseField>
+
+<ResponseField name="nombre_doctor" type="string">
+  The full name of the doctor assigned to the appointment.
+</ResponseField>
+
+<ResponseField name="nombre_servicio" type="string">
+  The name of the dental service associated with the appointment.
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url http://localhost:4000/api/citas/proxima/42
+```
+
+</CodeGroup>
+
+<ResponseExample>
+
+```json 200
+{
+  "fecha_hora_inicio": "2026-04-15T10:30:00.000Z",
+  "estado_cita": "confirmada",
+  "motivo": "Limpieza dental de rutina",
+  "nombre_doctor": "Dr. Carlos Ramírez",
+  "nombre_servicio": "Profilaxis dental"
+}
+```
+
+```json 404
+{
+  "message": "No tienes citas próximas agendadas."
+}
+```
+
+```json 500
+{
+  "error": "Error del servidor al obtener la cita."
+}
+```
+
+</ResponseExample>

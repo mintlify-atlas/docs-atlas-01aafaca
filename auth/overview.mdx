@@ -1,0 +1,60 @@
+---
+title: 'Authentication & Security'
+description: 'How authentication works in the DentalConnect API and what callers need to know.'
+icon: 'lock'
+---
+
+## Overview
+
+The DentalConnect API does not require a bearer token or session token to call its endpoints. All auth endpoints are **publicly accessible** — no `Authorization` header is needed.
+
+The primary auth flow exposed by the API is a **two-step password reset** flow:
+
+1. Request a reset token by submitting an email address.
+2. Submit the token along with a new password to complete the reset.
+
+This flow is designed to integrate with a frontend application (e.g., a React or Laravel Blade UI) that handles collecting user input and displaying confirmation screens.
+
+## Security design
+
+### Token generation and storage
+
+When a password reset is requested, the API:
+
+- Generates a cryptographically random 32-byte token using `crypto.randomBytes`.
+- Hashes the raw token with **SHA-256** before storing it in the database. Only the hash is persisted — the raw token is sent to the user by email and is never stored.
+- Sets an expiry of **15 minutes** from the time of the request.
+
+When the user submits the token to reset their password, the API hashes the submitted token and compares it against the stored hash. This ensures that even if the database is compromised, the raw reset tokens are not exposed.
+
+### Password hashing
+
+New passwords are hashed with **bcrypt** (cost factor 10). The resulting hash is stored in a **Laravel-compatible `$2y$` format**, ensuring compatibility with any Laravel authentication layer that reads the same `usuarios_sistema` table.
+
+### Password requirements
+
+The API enforces the following rules on every new password:
+
+| Rule | Requirement |
+|------|-------------|
+| Minimum length | 8 characters |
+| Uppercase letter | At least one (`A`–`Z`) |
+| Special character | At least one (`@`, `#`, `$`, `!`, etc.) |
+| Forbidden sequence | Must not contain `123` |
+
+Requests that fail validation receive a `400` response with a descriptive error message.
+
+## Endpoints at a glance
+
+<CardGroup cols={2}>
+  <Card title="POST /api/auth/forgot-password" icon="envelope" href="/auth/password-reset">
+    Submit an email address to trigger a password reset email.
+  </Card>
+  <Card title="POST /api/auth/reset-password" icon="key" href="/api/auth">
+    Submit the token, email, and new password to complete the reset.
+  </Card>
+</CardGroup>
+
+<Info>
+  GET requests to `/api/auth/reset-password` return `405 Method Not Allowed`. The endpoint only accepts POST.
+</Info>

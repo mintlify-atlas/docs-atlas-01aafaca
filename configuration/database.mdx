@@ -1,0 +1,76 @@
+---
+title: 'Database configuration'
+description: 'How the DentalConnect API connects to MySQL using Sequelize ORM.'
+---
+
+The DentalConnect API uses [Sequelize](https://sequelize.org/) v6 with the `mysql2` driver to communicate with a MySQL database. The connection is configured entirely through environment variables — no hardcoded credentials.
+
+## Connection setup
+
+The connection is initialized in `src/config/database.js`:
+
+```javascript src/config/database.js
+const sequelize = new Sequelize(
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASS,
+    {
+        host: process.env.DB_HOST,
+        dialect: process.env.DB_DIALECT || 'mysql',
+        logging: false
+    }
+);
+```
+
+SQL query logging is disabled by default (`logging: false`). Enable it during development by setting `logging: console.log` if you need to inspect generated queries.
+
+## Environment variables
+
+| Variable | Description |
+|---|---|
+| `DB_NAME` | MySQL database name |
+| `DB_USER` | MySQL username |
+| `DB_PASS` | MySQL password |
+| `DB_HOST` | MySQL host address |
+| `DB_DIALECT` | Sequelize dialect, defaults to `mysql` |
+
+See [Environment variables](/configuration/environment) for the full variable reference.
+
+## Database tables
+
+The API reads from and writes to the following tables:
+
+| Table | Description |
+|---|---|
+| `usuarios_sistema` | System users (staff accounts with login credentials) |
+| `citas` | Appointments, including date, time, status, and references to patient, doctor, and clinic |
+| `doctores` | Dentists and doctors associated with clinics |
+| `pacientes` | Patients, including contact information used for reminder emails |
+| `clinicas` | Clinic records |
+| `catalogo_servicios` | Catalog of dental services offered |
+| `config_recordatorios` | Per-clinic configuration for appointment reminder message templates |
+
+## Shared database with Laravel
+
+This API is designed to run alongside a Laravel application against the same MySQL database. The Node.js API does not manage migrations — schema changes are handled by the Laravel side. Ensure the database schema is fully migrated before starting the API.
+
+## Verifying the connection
+
+On startup, the server calls `sequelize.authenticate()` and logs the result. You can verify the connection is working by checking the server output:
+
+```
+Conexión establecida con la Base de Datos.
+```
+
+If the connection fails, the server continues running (to avoid CORS timeouts) but logs the error:
+
+```
+Error al conectar con la Base de Datos: [error details]
+```
+
+<Tip>
+  If you see a connection error, confirm that:
+  - The values in your `.env` file are correct.
+  - The MySQL server is reachable from the host running the API.
+  - The database user has the necessary privileges on `DB_NAME`.
+</Tip>
